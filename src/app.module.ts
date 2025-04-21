@@ -9,15 +9,16 @@ import { NotificationModule } from './notifications/notification.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost', // Use your PostgreSQL server address
-      port: 5432, // Default PostgreSQL port
-      username: 'postgres', // Your PostgreSQL username
-      password: 'abc456', // Your PostgreSQL password
-      database: 'library_app', // Your database name
-      entities: [User], // Entities that TypeORM should recognize
-      synchronize: true, // Auto-create tables (disable in production)
+      url: process.env.DATABASE_URL,
+      entities: [User],
+      synchronize: true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
     }),
-    UserModule,AgoraModule,NotificationModule
+    UserModule,
+    AgoraModule,
+    NotificationModule,
   ],
 })
 export class AppModule {}
