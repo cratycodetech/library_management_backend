@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from '../users/user.entity';
 import { admin } from '../config/firebase.config';
 
@@ -14,11 +14,13 @@ export class NotificationService {
   async sendPushNotification(userIds: string[] | string, title: string, body: string) {
     const ids = Array.isArray(userIds) ? userIds : [userIds];
 
-    const users = await this.userRepository.findByIds(ids);
+    const users = await this.userRepository.find({
+      where: { id: In(ids) },  // 🔹 Updated this line
+    });
 
     const tokens = users
       .map(user => user.fcmToken)
-      .filter(token => !!token); // Filter out null/undefined tokens
+      .filter(token => !!token); 
 
     if (tokens.length === 0) {
       return { success: false, message: 'No valid FCM tokens found for users' };
