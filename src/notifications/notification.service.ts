@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../users/user.entity'; // Ensure the correct path
-import { admin } from '../config/firebase.config'; // ✅ Fix import
+import { User } from '../users/user.entity';
+import { admin } from '../config/firebase.config';
 
 @Injectable()
 export class NotificationService {
@@ -11,27 +11,32 @@ export class NotificationService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async sendPushNotification(userId: string, title: string, body: string) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+  async sendPushNotification(userIds: string[] | string, title: string, body: string) {
+    const ids = Array.isArray(userIds) ? userIds : [userIds];
 
-    if (!user || !user.fcmToken) {
-      return { success: false, message: 'FCM Token not found for user' };
+    const users = await this.userRepository.findByIds(ids);
+
+    const tokens = users
+      .map(user => user.fcmToken)
+      .filter(token => !!token); // Filter out null/undefined tokens
+
+    if (tokens.length === 0) {
+      return { success: false, message: 'No valid FCM tokens found for users' };
     }
 
-    const message = {
-      notification: {
-        title,
-        body,
-      },
-      token: user.fcmToken,
-    };
+    const messages = tokens.map(token => ({
+      notification: { title, body },
+      token,
+    }));
 
     try {
-      await admin.messaging().send(message);
-      return { success: true, message: 'Notification sent successfully' };
+      const responses = await Promise.all(
+        messages.map(msg => admin.messaging().send(msg))
+      );
+      return { success: true, message: 'Notifications sent successfully', responses };
     } catch (error) {
-      console.error('Error sending push notification:', error);
-      return { success: false, message: 'Failed to send notification' };
+      console.error('Error sending push notifications:', error);
+      return { success: false, message: 'Failed to send notifications' };
     }
   }
 }

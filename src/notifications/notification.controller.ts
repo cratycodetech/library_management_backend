@@ -7,10 +7,10 @@ export class NotificationController {
 
   @Post('send')
   async sendNotification(
-    @Body('userId') userId: string,
+    @Body('userIds') userIds: string[] | string,
     @Body('title') title: string,
     @Body('body') body: string,
   ) {
-    return this.notificationService.sendPushNotification(userId, title, body);
+    return this.notificationService.sendPushNotification(userIds, title, body);
   }
 }
